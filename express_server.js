@@ -42,7 +42,7 @@ app.get("/urls/new", (req, res) => {
 
 
 app.post("/urls", (req, res) => {
-  console.log(req.body.longURL); // Log the POST request body to the console
+  //console.log(req.body.longURL); // Log the POST request body to the console
   let newId = generateRandomString()
   urlDatabase[newId] = req.body.longURL
   res.redirect(`/urls/${newId}`);
@@ -63,11 +63,11 @@ app.get("/u/:id", (req, res) => {
 
 
 app.post("/urls/:id/delete", (req, res) => {
- //console.log(req.body.id)
+ //console.log('test')
   const {id} = req.params
   for(let shortURL in urlDatabase) {
     if(shortURL === id) {
-      delete urlDatabase[id]
+      delete urlDatabase[id]  
     }
   }
  
@@ -77,12 +77,18 @@ app.post("/urls/:id/delete", (req, res) => {
 
 
 app.post("/urls/:id/edit", (req, res) => {
+  //console.log('test')
   const {id} = req.params
+  for(let shortURL in urlDatabase) {
+    if(shortURL === id) {
+      urlDatabase[id] = req.body.newURL
+    }
+  }
   
 
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
-  res.render("urls_show", templateVars)
-   
+  // const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  // res.render("urls_show", templateVars)
+  res.redirect('/urls');
  });
 
 
