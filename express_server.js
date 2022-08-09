@@ -21,13 +21,13 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
+// app.get("/urls.json", (req, res) => {
+//   res.json(urlDatabase);
+// });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
+// app.get("/hello", (req, res) => {
+//   res.send("<html><body>Hello <b>World</b></body></html>\n");
+// });
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -43,16 +43,10 @@ app.get("/urls/new", (req, res) => {
 
 app.post("/urls", (req, res) => {
   console.log(req.body.longURL); // Log the POST request body to the console
-  
-  
   let newId = generateRandomString()
   urlDatabase[newId] = req.body.longURL
-  //res.redirect(`/urls/${newId}`)
-  //console.log(id)
-    //const templateVars = { id: newId, longURL: newLink };
-  //res.render("urls_show", templateVars);
   res.redirect(`/urls/${newId}`);
-  //res.send("Ok"); // Respond with 'Ok' (we will replace this)
+
 });
 
 app.get("/urls/:id", (req, res) => {
@@ -63,15 +57,25 @@ app.get("/urls/:id", (req, res) => {
 
 app.get("/u/:id", (req, res) => {
    const longURL = urlDatabase[req.params.id]
-  //  console.log(longURL)
-
-    //const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
-
-  //  res.render(longURL, templateVars);
-
-
   res.redirect(longURL);
 });
+
+
+
+app.post("/urls/:id/delete", (req, res) => {
+ //console.log(req.body.id)
+  const {id} = req.params
+  for(let shortURL in urlDatabase) {
+    if(shortURL === id) {
+      delete urlDatabase[id]
+    }
+  }
+ 
+  res.redirect('/urls');
+});
+
+
+
 
 //<%- include('partials/_header') %> 
 
