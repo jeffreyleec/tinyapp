@@ -48,7 +48,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  const templateVars = { urls: urlDatabase, users: req.cookies["user_id"] };
+  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
   res.render("login", templateVars);
 });
 
@@ -112,17 +112,7 @@ app.post("/urls/:id/edit", (req, res) => {
 // });
 
 
-app.post("/login", (req, res) => {
-   const userLogin = req.body.username;
-  res.cookie('username', userLogin, { maxAge: 900000, httpOnly: true })
-  console.log('Cookies: ', req.cookies)
- 
 
-  const templateVars = {
-    username: req.cookies["username"], urls: urlDatabase
-      };
-  res.redirect("/urls");
-});
 
 
 app.post("/logout", (req, res) => {
@@ -144,7 +134,7 @@ app.post("/register", (req, res) => {
     });
   }
 
-  if(getUserByEmail(userEmail)){
+  if(prexsistingEmail(userEmail)){
     console.log('theres a match')
     return res.status(400).send({
       message: 'This is an error! Email already being used'
@@ -164,6 +154,35 @@ app.post("/register", (req, res) => {
 
 
 
+app.post("/login", (req, res) => {
+
+  const userEmail = req.body.email;
+  const userPassword = req.body.pass;
+  if (req.body.email === '' || req.body.pass === '') {
+    return res.status(400).send({
+      message: 'This is an error! Missing Data'
+    });
+  }
+  
+  if(prexsistingEmail(userEmail)){
+    let selectUser = getUserByEmail(userEmail)
+    let userStats = users[selectUser]
+    res.cookie('user_id', userStats, { maxAge: 900000, httpOnly: true })
+    res.redirect('/urls');
+   
+  } else {
+    console.log('try again')
+    res.redirect('/login');
+  }
+
+ 
+  
+
+  
+  
+});
+
+
 
 
 
@@ -178,7 +197,7 @@ const generateRandomString = function () {
 
 }
 
-const getUserByEmail = function (emailTest) {
+const prexsistingEmail = function (emailTest) {
   for (let userProfiles in users) {
     if (users[userProfiles].email === emailTest) {
       return true
@@ -187,3 +206,15 @@ const getUserByEmail = function (emailTest) {
   return false;
 
 }
+
+
+function getUserByEmail(emailTest) {
+  for(let userProfiles in users){
+    if (users[userProfiles].email === emailTest) {
+      return userProfiles
+    }
+  }
+  return false
+}
+
+
