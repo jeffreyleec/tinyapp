@@ -105,11 +105,7 @@ app.post("/urls/:id/edit", (req, res) => {
 });
 
 
-//  app.get("/urls/login", (req, res) => {
-//   //const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies["username"] };
-//   let username = "test"
-//   res.render("urls_show", templateVars);
-// });
+
 
 
 
@@ -135,7 +131,7 @@ app.post("/register", (req, res) => {
   }
 
   if(prexsistingEmail(userEmail)){
-    console.log('theres a match')
+    //console.log('theres a match')
     return res.status(400).send({
       message: 'This is an error! Email already being used'
    });
@@ -167,12 +163,21 @@ app.post("/login", (req, res) => {
   if(prexsistingEmail(userEmail)){
     let selectUser = getUserByEmail(userEmail)
     let userStats = users[selectUser]
-    res.cookie('user_id', userStats, { maxAge: 900000, httpOnly: true })
-    res.redirect('/urls');
+
+    if (userPassword === userStats.password) {
+      res.cookie('user_id', userStats, { maxAge: 900000, httpOnly: true })
+      res.redirect('/urls');
+    } else {
+      return res.status(403).send({
+        message: 'password incorrect'
+      });
+    }
+    
    
   } else {
-    console.log('try again')
-    res.redirect('/login');
+    return res.status(403).send({
+      message: 'e-mail cannot be found'
+    });
   }
 
  
