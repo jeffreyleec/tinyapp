@@ -4,10 +4,7 @@ const PORT = 8080;
 const cookieParser = require('cookie-parser')
 
 app.use(cookieParser())
-
-
 app.use(express.urlencoded({ extended: true }));
-
 app.set("view engine", "ejs");
 
 const urlDatabase = {
@@ -15,6 +12,18 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
 
 
 app.get("/", (req, res) => {
@@ -25,30 +34,28 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
-
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
 
 app.get("/urls", (req, res) => {
 
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
   res.render("urls_new", templateVars);
-  
+
 });
 
-// app.get("/login", (req, res) => {
-//   const templateVars = { urls: urlDatabase, username:"" };
-//   res.render("login", templateVars);
-// });
+app.get("/login", (req, res) => {
+  const templateVars = { urls: urlDatabase, users: req.cookies["user_id"] };
+  res.render("login", templateVars);
+});
+
+app.get("/register", (req, res) => {
+  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
+  res.render("register", templateVars);
+});
 
 
 app.post("/urls", (req, res) => {
@@ -60,27 +67,27 @@ app.post("/urls", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies["username"] };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user: req.cookies["user_id"] };
   res.render("urls_show", templateVars);
 });
 
 
 app.get("/u/:id", (req, res) => {
-   const longURL = urlDatabase[req.params.id]
+  const longURL = urlDatabase[req.params.id]
   res.redirect(longURL);
 });
 
 
 
 app.post("/urls/:id/delete", (req, res) => {
- //console.log('test')
-  const {id} = req.params
-  for(let shortURL in urlDatabase) {
-    if(shortURL === id) {
-      delete urlDatabase[id]  
+  //console.log('test')
+  const { id } = req.params
+  for (let shortURL in urlDatabase) {
+    if (shortURL === id) {
+      delete urlDatabase[id]
     }
   }
- 
+
   res.redirect('/urls');
 });
 
@@ -88,71 +95,95 @@ app.post("/urls/:id/delete", (req, res) => {
 
 app.post("/urls/:id/edit", (req, res) => {
   //console.log('test')
-  const {id} = req.params
-  for(let shortURL in urlDatabase) {
-    if(shortURL === id) {
+  const { id } = req.params
+  for (let shortURL in urlDatabase) {
+    if (shortURL === id) {
       urlDatabase[id] = req.body.newURL
     }
   }
   res.redirect('/urls');
- });
+});
 
 
 //  app.get("/urls/login", (req, res) => {
-//   //const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+//   //const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies["username"] };
 //   let username = "test"
 //   res.render("urls_show", templateVars);
 // });
 
 
- app.post("/login", (req, res) => {
-  //console.log(req.body.username)
-  const userLogin = req.body.username;
-  
-    res.cookie('username', userLogin, { maxAge: 900000, httpOnly: true })
-    console.log('Cookies: ', req.cookies)
-   //console.log('Signed Cookies: ', req.signedCookies)
+app.post("/login", (req, res) => {
+   const userLogin = req.body.username;
+  res.cookie('username', userLogin, { maxAge: 900000, httpOnly: true })
+  console.log('Cookies: ', req.cookies)
+ 
 
-   const templateVars = {
+  const templateVars = {
     username: req.cookies["username"], urls: urlDatabase
-    // ... any other vars
-  };
+      };
   res.redirect("/urls");
- });
+});
 
 
- app.post("/logout", (req, res) => {
-  console.log(req.body.username)
-  // const userLogin = req.body.username;
-  
-    //res.cookie('username', userLogin, { maxAge: 900000, httpOnly: true })
-    console.log('Cookies: ', req.cookies)
-   //console.log('Signed Cookies: ', req.signedCookies)
-   res.clearCookie('username')//, { path: '/admin' })
-  //  const templateVars = {
-  //   username: req.cookies["username"], urls: urlDatabase
-    // ... any other vars
-  
-    // const templateVars = {
-    //   username: req.cookies["username"], urls: urlDatabase
-    //   // ... any other vars
-    // };
-    res.redirect('/urls');
- });
- 
+app.post("/logout", (req, res) => {
 
- 
- 
+
+  res.clearCookie('user_id')//, { path: '/admin' })
+  res.redirect('/urls');
+});
 
 
 
+app.post("/register", (req, res) => {
+  let userId = generateRandomString()
+  const userEmail = req.body.email;
+  const userPassword = req.body.pass;
+  if (req.body.email === '' || req.body.pass === '') {
+    return res.status(400).send({
+      message: 'This is an error! Missing Data'
+    });
+  }
+
+  if(getUserByEmail(userEmail)){
+    console.log('theres a match')
+    return res.status(400).send({
+      message: 'This is an error! Email already being used'
+   });
+  }
+
+  let newProfile = {
+    id: userId,
+    email: userEmail,
+    password: userPassword
+  }
+
+  users[userId] = newProfile
+  res.cookie('user_id', newProfile, { maxAge: 900000, httpOnly: true })
+  res.redirect('/urls');
+});
 
 
-//<%- include('partials/_header') %> 
 
 
-const generateRandomString = function() {
+
+
+
+
+
+
+
+const generateRandomString = function () {
   let length = 6
-  return  Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
+  return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
+
+}
+
+const getUserByEmail = function (emailTest) {
+  for (let userProfiles in users) {
+    if (users[userProfiles].email === emailTest) {
+      return true
+    }
+  }
+  return false;
 
 }

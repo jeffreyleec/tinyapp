@@ -19,10 +19,10 @@
   </head>
 
   <body>
-    <!-- <%- include('partials/_header') %> -->
+    <%- include('partials/_header') %>
     <h1>Login</h1>
-    <form>
-      <p>Email:<input type="email" name="email"/> </p>
+    <form action="/login" method="POST">
+      <p>Login:<input type="email" name="email"/> </p>
       <p>Email:<input type="password" name="pass" /> </p>
       <p><button>Log in</button>
 
