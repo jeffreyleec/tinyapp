@@ -120,12 +120,16 @@ app.post("/urls", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  if (urlDatabase[req.params.id]) {
-    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: req.cookies["user_id"] };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: req.cookies["user_id"], urls: urlDatabase };
+
+  if (urlDatabase[templateVars.id].userID === templateVars.user.id ) {
   res.render("urls_show", templateVars);
   }else {
+    //console.log(urlDatabase[templateVars.id].userID)
+    //console.log(templateVars.user.id)
     return res.status(404).send({
       message: 'id not found.'
+    
     });
   }
 
