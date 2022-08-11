@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
+const bcrypt = require("bcryptjs");
 
 const urlDatabase = {
   b6UTxQ: {
@@ -200,6 +201,8 @@ app.post("/register", (req, res) => {
   let userId = generateRandomString();
   const userEmail = req.body.email;
   const userPassword = req.body.pass;
+  const hashedPassword = bcrypt.hashSync(userPassword, 10);
+
   if (req.body.email === '' || req.body.pass === '') {
     return res.status(400).send({
       message: 'This is an error! Missing Data'
@@ -216,7 +219,7 @@ app.post("/register", (req, res) => {
   let newProfile = {
     id: userId,
     email: userEmail,
-    password: userPassword
+    password: hashedPassword
   };
 
   users[userId] = newProfile;
@@ -240,7 +243,7 @@ app.post("/login", (req, res) => {
     let selectUser = getUserByEmail(userEmail);
     let userStats = users[selectUser];
 
-    if (userPassword === userStats.password) {
+    if (bcrypt.compareSync(userPassword, users[selectUser].password)) {
       res.cookie('user_id', userStats, { maxAge: 900000, httpOnly: true });
       res.redirect('/urls');
     } else {
