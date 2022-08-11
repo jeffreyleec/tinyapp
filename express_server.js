@@ -1,9 +1,15 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
-const cookieParser = require('cookie-parser');
+const {getUserByEmail, prexsistingEmail, generateRandomString, findingMatchingIDURLs} =  require('./helper');
 
-app.use(cookieParser());
+
+var cookieSession = require('cookie-session')
+app.use(cookieSession({
+  name: 'session',
+  keys: ['notasecret']
+}));
+
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 const bcrypt = require("bcryptjs");
@@ -43,33 +49,30 @@ app.listen(PORT, () => {
 
 
 app.get("/urls", (req, res) => {
-
-  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
+  const matchingDatabase = findingMatchingIDURLs(req.session['user_id'], urlDatabase)
+  
+  const templateVars = { urls: matchingDatabase, user: users[req.session['user_id']]};
   res.render("urls_index", templateVars);
 });
 
-app.get("/urls/new", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
-  //console.log(users)
-  //console.log(urlDatabase)
-  //console.log([templateVars.user.id])
 
-  if (templateVars.user && templateVars.user.password === users[templateVars.user.id].password) {
-    //&& templateVars.user.password === users[templateVars.user.id].password
+
+app.get("/urls/new", (req, res) => {
+    const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
+  const user = users[req.session['user_id']]
+  
+    if (user) {
     res.render("urls_new", templateVars);
-    //console.log('test');
-  } else {
+      } else {
     res.status(401).send('please login first!');
     res.redirect("/login");
   }
 });
 
 app.get("/login", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
-  //console.log(templateVars.user.email)
+  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
   if (templateVars.user) {
     res.redirect("/urls");
-   // console.log('test');
   } else {
     res.render("login", templateVars);
 
@@ -79,13 +82,11 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
-
+  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
 
   if (templateVars.user) {
     res.redirect("/urls");
-    console.log('test');
-  } else {
+      } else {
     res.render("register", templateVars);
 
   }
@@ -94,41 +95,33 @@ app.get("/register", (req, res) => {
 
 app.post("/urls", (req, res) => {
   
-  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"]};
-  //console.log(req.body.longURL); // Log the POST request body to the console
+  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
   if (templateVars.user && templateVars.user.password === users[templateVars.user.id].password) {
-    //&& templateVars.user.password === users[templateVars.user.id].password
     let newId = generateRandomString();
     let longURLDATA = req.body.longURL;
     let userIDDATA = templateVars.user.id;
     urlDatabase[newId] = {};
     urlDatabase[newId].longURL = longURLDATA;
     urlDatabase[newId].userID = userIDDATA;
-   //console.log(templateVars.user.id)
-    //let matchingIDURLs = findingMatchingIDURLs(templateVars.user.id)
     
-//LAST HERE CHANGE ^^^^^^^^^^^^^^^^^^^^^******
-    //console.log(urlDatabase)
     res.redirect(`/urls/${newId}`);
+
   } else {
     res.redirect("/login");
   }
 
-  // let newId = generateRandomString()
-  // urlDatabase[newId] = req.body.longURL
-  // res.redirect(`/urls/${newId}`);
+
 
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: req.cookies["user_id"], urls: urlDatabase };
+  
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: users[req.session['user_id']], urls: urlDatabase };
 
   if (urlDatabase[templateVars.id].userID === templateVars.user.id ) {
   res.render("urls_show", templateVars);
   }else {
-    //console.log(urlDatabase[templateVars.id].userID)
-    //console.log(templateVars.user.id)
-    return res.status(404).send({
+     return res.status(404).send({
       message: 'id not found.'
     
     });
@@ -170,8 +163,6 @@ app.post("/urls/:id/delete", (req, res) => {
 
 
 app.post("/urls/:id/edit", (req, res) => {
-  //console.log('test')
-
   const { id } = req.params;
   for (let shortURL in urlDatabase) {
     if (shortURL === id) {
@@ -183,15 +174,10 @@ app.post("/urls/:id/edit", (req, res) => {
 
 
 
-
-
-
-
-
 app.post("/logout", (req, res) => {
 
 
-  res.clearCookie('user_id');//, { path: '/admin' })
+  req.session = null;
   res.redirect('/urls');
 });
 
@@ -209,8 +195,8 @@ app.post("/register", (req, res) => {
     });
   }
 
-  if (prexsistingEmail(userEmail)) {
-    //console.log('theres a match')
+  if (prexsistingEmail(userEmail, users)) {
+  
     return res.status(400).send({
       message: 'This is an error! Email already being used'
     });
@@ -223,7 +209,7 @@ app.post("/register", (req, res) => {
   };
 
   users[userId] = newProfile;
-  res.cookie('user_id', newProfile, { maxAge: 900000, httpOnly: true });
+  req.session.user_id = newProfile.id;
   res.redirect('/urls');
 });
 
@@ -239,12 +225,12 @@ app.post("/login", (req, res) => {
     });
   }
 
-  if (prexsistingEmail(userEmail)) {
-    let selectUser = getUserByEmail(userEmail);
+  if (prexsistingEmail(userEmail, users)) {
+    let selectUser = getUserByEmail(userEmail, users);
     let userStats = users[selectUser];
 
     if (bcrypt.compareSync(userPassword, users[selectUser].password)) {
-      res.cookie('user_id', userStats, { maxAge: 900000, httpOnly: true });
+      req.session.user_id = userStats.id;
       res.redirect('/urls');
     } else {
       return res.status(403).send({
@@ -266,44 +252,6 @@ app.post("/login", (req, res) => {
 
 
 
-
-
-
-const generateRandomString = function () {
-  let length = 6;
-  return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
-
-};
-
-const prexsistingEmail = function (emailTest) {
-  for (let userProfiles in users) {
-    if (users[userProfiles].email === emailTest) {
-      return true;
-    }
-  }
-  return false;
-
-};
-
-
-function getUserByEmail(emailTest) {
-  for (let userProfiles in users) {
-    if (users[userProfiles].email === emailTest) {
-      return userProfiles;
-    }
-  }
-  return false;
-}
-
-function findingMatchingIDURLs(userIdentity) {
-  let matching = [];
-    for (let key in urlDatabase){
-      if ( urlDatabase[key].userID === userIdentity) {
-        matching.push(urlDatabase[key].longURL);
-      }
-    }
-    return matching;
-  }
 
 
 

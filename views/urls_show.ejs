@@ -15,7 +15,7 @@
     
     <%- include('partials/_header') %>
       
-          <% if(('\"'+ urls[id].userID + '\"') === JSON.stringify(user.id)){ %>
+          <% if(user){ %>
             <div class="card text-center">
               <div class="card-header"></div>
               <div class="card-body">

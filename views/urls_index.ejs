@@ -34,7 +34,7 @@
           <% if(user){ %>
           
             <% for (let id in urls) { %>
-                <% if(('\"'+ urls[id].userID + '\"') === JSON.stringify(user.id)){ %>
+                
                   <!-- urls[id].userID -->
                   <!-- JSON.stringify(user.id) -->
                   <!-- <%= JSON.stringify(user.id) %> -->
@@ -58,7 +58,7 @@
                     
                     
                   </tr>
-                <% } %>
+                
               
               
             <% } %>
