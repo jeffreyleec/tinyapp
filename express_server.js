@@ -1,15 +1,21 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
 
-app.use(cookieParser())
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
 const users = {
@@ -43,48 +49,113 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
-  res.render("urls_new", templateVars);
+  //console.log(users)
+  //console.log(urlDatabase)
+  //console.log([templateVars.user.id])
 
+  if (templateVars.user && templateVars.user.password === users[templateVars.user.id].password) {
+    //&& templateVars.user.password === users[templateVars.user.id].password
+    res.render("urls_new", templateVars);
+    //console.log('test');
+  } else {
+    res.status(401).send('please login first!');
+    res.redirect("/login");
+  }
 });
 
 app.get("/login", (req, res) => {
   const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
-  res.render("login", templateVars);
+  //console.log(templateVars.user.email)
+  if (templateVars.user) {
+    res.redirect("/urls");
+   // console.log('test');
+  } else {
+    res.render("login", templateVars);
+
+  }
+
+
 });
 
 app.get("/register", (req, res) => {
   const templateVars = { urls: urlDatabase, user: req.cookies["user_id"] };
-  res.render("register", templateVars);
+
+
+  if (templateVars.user) {
+    res.redirect("/urls");
+    console.log('test');
+  } else {
+    res.render("register", templateVars);
+
+  }
 });
 
 
 app.post("/urls", (req, res) => {
+  
+  const templateVars = { urls: urlDatabase, user: req.cookies["user_id"]};
   //console.log(req.body.longURL); // Log the POST request body to the console
-  let newId = generateRandomString()
-  urlDatabase[newId] = req.body.longURL
-  res.redirect(`/urls/${newId}`);
+  if (templateVars.user && templateVars.user.password === users[templateVars.user.id].password) {
+    //&& templateVars.user.password === users[templateVars.user.id].password
+    let newId = generateRandomString();
+    let longURLDATA = req.body.longURL;
+    let userIDDATA = templateVars.user.id;
+    urlDatabase[newId] = {};
+    urlDatabase[newId].longURL = longURLDATA;
+    urlDatabase[newId].userID = userIDDATA;
+   //console.log(templateVars.user.id)
+    //let matchingIDURLs = findingMatchingIDURLs(templateVars.user.id)
+    
+//LAST HERE CHANGE ^^^^^^^^^^^^^^^^^^^^^******
+    //console.log(urlDatabase)
+    res.redirect(`/urls/${newId}`);
+  } else {
+    res.redirect("/login");
+  }
+
+  // let newId = generateRandomString()
+  // urlDatabase[newId] = req.body.longURL
+  // res.redirect(`/urls/${newId}`);
 
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user: req.cookies["user_id"] };
+  if (urlDatabase[req.params.id]) {
+    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: req.cookies["user_id"] };
   res.render("urls_show", templateVars);
+  }else {
+    return res.status(404).send({
+      message: 'id not found.'
+    });
+  }
+
+
+
+
+  
 });
 
 
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id]
+if (urlDatabase[req.params.id]) {
+  const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
+}else {
+  return res.status(404).send({
+    Error: 'ID not found. Please refresh and try agian.'
+  });
+}
+  
 });
 
 
 
 app.post("/urls/:id/delete", (req, res) => {
   //console.log('test')
-  const { id } = req.params
+  const { id } = req.params;
   for (let shortURL in urlDatabase) {
     if (shortURL === id) {
-      delete urlDatabase[id]
+      delete urlDatabase[id];
     }
   }
 
@@ -95,10 +166,11 @@ app.post("/urls/:id/delete", (req, res) => {
 
 app.post("/urls/:id/edit", (req, res) => {
   //console.log('test')
-  const { id } = req.params
+
+  const { id } = req.params;
   for (let shortURL in urlDatabase) {
     if (shortURL === id) {
-      urlDatabase[id] = req.body.newURL
+      urlDatabase[id].longURL = req.body.newURL;
     }
   }
   res.redirect('/urls');
@@ -114,14 +186,14 @@ app.post("/urls/:id/edit", (req, res) => {
 app.post("/logout", (req, res) => {
 
 
-  res.clearCookie('user_id')//, { path: '/admin' })
+  res.clearCookie('user_id');//, { path: '/admin' })
   res.redirect('/urls');
 });
 
 
 
 app.post("/register", (req, res) => {
-  let userId = generateRandomString()
+  let userId = generateRandomString();
   const userEmail = req.body.email;
   const userPassword = req.body.pass;
   if (req.body.email === '' || req.body.pass === '') {
@@ -130,21 +202,21 @@ app.post("/register", (req, res) => {
     });
   }
 
-  if(prexsistingEmail(userEmail)){
+  if (prexsistingEmail(userEmail)) {
     //console.log('theres a match')
     return res.status(400).send({
       message: 'This is an error! Email already being used'
-   });
+    });
   }
 
   let newProfile = {
     id: userId,
     email: userEmail,
     password: userPassword
-  }
+  };
 
-  users[userId] = newProfile
-  res.cookie('user_id', newProfile, { maxAge: 900000, httpOnly: true })
+  users[userId] = newProfile;
+  res.cookie('user_id', newProfile, { maxAge: 900000, httpOnly: true });
   res.redirect('/urls');
 });
 
@@ -159,32 +231,26 @@ app.post("/login", (req, res) => {
       message: 'This is an error! Missing Data'
     });
   }
-  
-  if(prexsistingEmail(userEmail)){
-    let selectUser = getUserByEmail(userEmail)
-    let userStats = users[selectUser]
+
+  if (prexsistingEmail(userEmail)) {
+    let selectUser = getUserByEmail(userEmail);
+    let userStats = users[selectUser];
 
     if (userPassword === userStats.password) {
-      res.cookie('user_id', userStats, { maxAge: 900000, httpOnly: true })
+      res.cookie('user_id', userStats, { maxAge: 900000, httpOnly: true });
       res.redirect('/urls');
     } else {
       return res.status(403).send({
         message: 'password incorrect'
       });
     }
-    
-   
+
+
   } else {
     return res.status(403).send({
       message: 'e-mail cannot be found'
     });
   }
-
- 
-  
-
-  
-  
 });
 
 
@@ -197,29 +263,40 @@ app.post("/login", (req, res) => {
 
 
 const generateRandomString = function () {
-  let length = 6
+  let length = 6;
   return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
 
-}
+};
 
 const prexsistingEmail = function (emailTest) {
   for (let userProfiles in users) {
     if (users[userProfiles].email === emailTest) {
-      return true
+      return true;
     }
   }
   return false;
 
-}
+};
 
 
 function getUserByEmail(emailTest) {
-  for(let userProfiles in users){
+  for (let userProfiles in users) {
     if (users[userProfiles].email === emailTest) {
-      return userProfiles
+      return userProfiles;
     }
   }
-  return false
+  return false;
 }
+
+function findingMatchingIDURLs(userIdentity) {
+  let matching = [];
+    for (let key in urlDatabase){
+      if ( urlDatabase[key].userID === userIdentity) {
+        matching.push(urlDatabase[key].longURL);
+      }
+    }
+    return matching;
+  }
+
 
 
