@@ -1,10 +1,10 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
-const {getUserByEmail, prexsistingEmail, generateRandomString, findingMatchingIDURLs} =  require('./helper');
+const {getUserByEmail, prexsistingEmail, generateRandomString, urlsForUser} =  require('./helper');
 
 
-var cookieSession = require('cookie-session')
+let cookieSession = require('cookie-session');
 app.use(cookieSession({
   name: 'session',
   keys: ['notasecret']
@@ -40,7 +40,7 @@ const users = {
 
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  return res.send("Hello!");
 });
 
 app.listen(PORT, () => {
@@ -49,32 +49,33 @@ app.listen(PORT, () => {
 
 
 app.get("/urls", (req, res) => {
-  const matchingDatabase = findingMatchingIDURLs(req.session['user_id'], urlDatabase)
+  const matchingDatabase = urlsForUser(req.session['user_id'], urlDatabase);
   
   const templateVars = { urls: matchingDatabase, user: users[req.session['user_id']]};
-  res.render("urls_index", templateVars);
+  return res.render("urls_index", templateVars);
 });
 
 
 
 app.get("/urls/new", (req, res) => {
-    const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
-  const user = users[req.session['user_id']]
+  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
+  const user = users[req.session['user_id']];
   
-    if (user) {
-    res.render("urls_new", templateVars);
-      } else {
-    res.status(401).send('please login first!');
-    res.redirect("/login");
+  if (user) {
+    return res.render("urls_new", templateVars);
+  } else {
+    return res.status(401).send('please login first!');
+    //return res.redirect("/login");
   }
+  
 });
 
 app.get("/login", (req, res) => {
   const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
   if (templateVars.user) {
-    res.redirect("/urls");
+    return res.redirect("/urls");
   } else {
-    res.render("login", templateVars);
+    return res.render("login", templateVars);
 
   }
 
@@ -85,9 +86,9 @@ app.get("/register", (req, res) => {
   const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
 
   if (templateVars.user) {
-    res.redirect("/urls");
-      } else {
-    res.render("register", templateVars);
+    return res.redirect("/urls");
+  } else {
+    return res.render("register", templateVars);
 
   }
 });
@@ -104,10 +105,10 @@ app.post("/urls", (req, res) => {
     urlDatabase[newId].longURL = longURLDATA;
     urlDatabase[newId].userID = userIDDATA;
     
-    res.redirect(`/urls/${newId}`);
+    return  res.redirect(`/urls/${newId}`);
 
   } else {
-    res.redirect("/login");
+    return  res.redirect("/login");
   }
 
 
@@ -118,31 +119,27 @@ app.get("/urls/:id", (req, res) => {
   
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: users[req.session['user_id']], urls: urlDatabase };
 
-  if (urlDatabase[templateVars.id].userID === templateVars.user.id ) {
-  res.render("urls_show", templateVars);
-  }else {
-     return res.status(404).send({
+  if (urlDatabase[templateVars.id].userID === templateVars.user.id) {
+    return  res.render("urls_show", templateVars);
+  } else {
+    return res.status(404).send({
       message: 'id not found.'
     
     });
   }
-
-
-
-
   
 });
 
 
 app.get("/u/:id", (req, res) => {
-if (urlDatabase[req.params.id]) {
-  const longURL = urlDatabase[req.params.id].longURL;
-  res.redirect(longURL);
-}else {
-  return res.status(404).send({
-    Error: 'ID not found. Please refresh and try agian.'
-  });
-}
+  if (urlDatabase[req.params.id]) { // fix this <- if check auth
+    const longURL = urlDatabase[req.params.id].longURL;
+    return  res.redirect(longURL);
+  } else {
+    return res.status(404).send({
+      Error: 'ID not found. Please refresh and try agian.'
+    });
+  }
   
 });
 
@@ -157,7 +154,7 @@ app.post("/urls/:id/delete", (req, res) => {
     }
   }
 
-  res.redirect('/urls');
+  return  res.redirect('/urls');
 });
 
 
@@ -169,7 +166,7 @@ app.post("/urls/:id/edit", (req, res) => {
       urlDatabase[id].longURL = req.body.newURL;
     }
   }
-  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 
@@ -178,7 +175,7 @@ app.post("/logout", (req, res) => {
 
 
   req.session = null;
-  res.redirect('/urls');
+  return  res.redirect('/urls');
 });
 
 
@@ -210,7 +207,7 @@ app.post("/register", (req, res) => {
 
   users[userId] = newProfile;
   req.session.user_id = newProfile.id;
-  res.redirect('/urls');
+  return  res.redirect('/urls');
 });
 
 
@@ -231,7 +228,7 @@ app.post("/login", (req, res) => {
 
     if (bcrypt.compareSync(userPassword, users[selectUser].password)) {
       req.session.user_id = userStats.id;
-      res.redirect('/urls');
+      return  res.redirect('/urls');
     } else {
       return res.status(403).send({
         message: 'password incorrect'

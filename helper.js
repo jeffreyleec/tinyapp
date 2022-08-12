@@ -15,16 +15,7 @@ const prexsistingEmail = function (emailTest, database) {
 };
 
 
-// function getUserByEmail(emailTest) {
-//   for (let userProfiles in users) {
-//     if (users[userProfiles].email === emailTest) {
-//       return userProfiles;
-//     }
-//   }
-//   return false;
-// }
-
-function findingMatchingIDURLs(userIdentity, database) {
+function urlsForUser(userIdentity, database) {
   let matching = {};
     for (let key in database){
       if ( database[key].userID === userIdentity) {
@@ -39,7 +30,7 @@ function findingMatchingIDURLs(userIdentity, database) {
   const getUserByEmail = function(email, database) {
     for (let userProfiles in database) {
       if (database[userProfiles].email === email) {
-        return userProfiles;
+        return database[userProfiles];
       }
     }
     return false;
@@ -47,4 +38,4 @@ function findingMatchingIDURLs(userIdentity, database) {
 
 
 
-  module.exports = {getUserByEmail, prexsistingEmail, generateRandomString, findingMatchingIDURLs};
+  module.exports = {getUserByEmail, prexsistingEmail, generateRandomString, urlsForUser};

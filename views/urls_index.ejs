@@ -18,6 +18,7 @@
   </head>
   <body>
     <%- include('partials/_header') %>
+    <% if(user){ %>
     <main style="margin: 1em;">
       <h3>My URLs</h3>
       <table class="table">
@@ -31,20 +32,13 @@
         </thead>
         <tbody>
 
-          <% if(user){ %>
           
             <% for (let id in urls) { %>
                 
-                  <!-- urls[id].userID -->
-                  <!-- JSON.stringify(user.id) -->
-                  <!-- <%= JSON.stringify(user.id) %> -->
-                  <!-- <h4><%=  ('\"'+ urls[id].userID + '\"') %></h4>
-                  <h4><%=   JSON.stringify(user.id) %></h4> -->
-
+      
                   <tr>
                     <td><%= id %></td>
                     <td><%= urls[id].longURL %></td>
-                    <!-- <td><button method ="POST" action="/urls/:id/delete" type="button" class="btn btn-outline-danger">Delete</button></td> -->
                     <td>
                       <form method="GET" action="/urls/<%= id %>">
                         <button type="submit" class="btn btn-outline-primary" >Edit</button>
@@ -66,7 +60,10 @@
           
           
         <% } else{ %> 
-            <a class="nav-item nav-link" href="/login" aria-expanded="false">To see your URLs, Click me to login!  :)</a>
+
+            <center>
+              <a class="nav-item nav-link" href="/login" aria-expanded="false" >To see your URLs, Click me to login!  :)</a>
+            </center>
           
           
        <% } %>
