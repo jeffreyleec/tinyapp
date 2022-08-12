@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
-const {getUserByEmail, prexsistingEmail, generateRandomString, urlsForUser} =  require('./helper');
+const { getUserByEmail, prexsistingEmail, generateRandomString, urlsForUser } = require('./helper');
 
 
 let cookieSession = require('cookie-session');
@@ -50,28 +50,27 @@ app.listen(PORT, () => {
 
 app.get("/urls", (req, res) => {
   const matchingDatabase = urlsForUser(req.session['user_id'], urlDatabase);
-  
-  const templateVars = { urls: matchingDatabase, user: users[req.session['user_id']]};
+
+  const templateVars = { urls: matchingDatabase, user: users[req.session['user_id']] };
   return res.render("urls_index", templateVars);
 });
 
 
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
+  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
   const user = users[req.session['user_id']];
-  
+
   if (user) {
     return res.render("urls_new", templateVars);
   } else {
     return res.status(401).send('please login first!');
-    //return res.redirect("/login");
   }
-  
+
 });
 
 app.get("/login", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
+  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
   if (templateVars.user) {
     return res.redirect("/urls");
   } else {
@@ -83,7 +82,7 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
+  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
 
   if (templateVars.user) {
     return res.redirect("/urls");
@@ -95,8 +94,8 @@ app.get("/register", (req, res) => {
 
 
 app.post("/urls", (req, res) => {
-  
-  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']]};
+
+  const templateVars = { urls: urlDatabase, user: users[req.session['user_id']] };
   if (templateVars.user && templateVars.user.password === users[templateVars.user.id].password) {
     let newId = generateRandomString();
     let longURLDATA = req.body.longURL;
@@ -104,49 +103,62 @@ app.post("/urls", (req, res) => {
     urlDatabase[newId] = {};
     urlDatabase[newId].longURL = longURLDATA;
     urlDatabase[newId].userID = userIDDATA;
-    
-    return  res.redirect(`/urls/${newId}`);
+
+    return res.redirect(`/urls/${newId}`);
 
   } else {
-    return  res.redirect("/login");
+    return res.redirect("/login");
   }
-
-
-
 });
 
-app.get("/urls/:id", (req, res) => {
-  
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: users[req.session['user_id']], urls: urlDatabase };
 
-  if (urlDatabase[templateVars.id].userID === templateVars.user.id) {
-    return  res.render("urls_show", templateVars);
+app.get("/urls/:id", (req, res) => {
+
+
+  if (urlDatabase[req.params.id]) {
+    if (!req.session['user_id']) {
+      return res.status(404).send({
+        message: 'This is not your URL!!'
+
+      });
+    }
+    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user: users[req.session['user_id']], urls: urlDatabase };
+
+    if (urlDatabase[templateVars.id].userID) {
+      return res.render("urls_show", templateVars);
+    } else {
+      return res.status(404).send({
+        message: 'id not found.'
+
+      });
+    }
   } else {
     return res.status(404).send({
-      message: 'id not found.'
-    
+      message: 'Link not found.'
+
     });
   }
-  
+
+
+
 });
 
 
 app.get("/u/:id", (req, res) => {
   if (urlDatabase[req.params.id]) { // fix this <- if check auth
     const longURL = urlDatabase[req.params.id].longURL;
-    return  res.redirect(longURL);
+    return res.redirect(longURL);
   } else {
     return res.status(404).send({
       Error: 'ID not found. Please refresh and try agian.'
     });
   }
-  
+
 });
 
 
 
 app.post("/urls/:id/delete", (req, res) => {
-  //console.log('test')
   const { id } = req.params;
   for (let shortURL in urlDatabase) {
     if (shortURL === id) {
@@ -154,7 +166,7 @@ app.post("/urls/:id/delete", (req, res) => {
     }
   }
 
-  return  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 
@@ -175,7 +187,7 @@ app.post("/logout", (req, res) => {
 
 
   req.session = null;
-  return  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 
@@ -193,7 +205,7 @@ app.post("/register", (req, res) => {
   }
 
   if (prexsistingEmail(userEmail, users)) {
-  
+
     return res.status(400).send({
       message: 'This is an error! Email already being used'
     });
@@ -207,7 +219,7 @@ app.post("/register", (req, res) => {
 
   users[userId] = newProfile;
   req.session.user_id = newProfile.id;
-  return  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 
@@ -224,11 +236,11 @@ app.post("/login", (req, res) => {
 
   if (prexsistingEmail(userEmail, users)) {
     let selectUser = getUserByEmail(userEmail, users);
-    let userStats = users[selectUser];
+    
 
-    if (bcrypt.compareSync(userPassword, users[selectUser].password)) {
-      req.session.user_id = userStats.id;
-      return  res.redirect('/urls');
+    if (bcrypt.compareSync(userPassword, users[selectUser.id].password)) {
+      req.session.user_id = selectUser.id;
+      return res.redirect('/urls');
     } else {
       return res.status(403).send({
         message: 'password incorrect'

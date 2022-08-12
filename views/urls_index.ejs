@@ -34,8 +34,6 @@
 
           
             <% for (let id in urls) { %>
-                
-      
                   <tr>
                     <td><%= id %></td>
                     <td><%= urls[id].longURL %></td>
@@ -51,21 +49,12 @@
                     </td>
                     
                     
-                  </tr>
-                
-              
-              
+                  </tr>             
             <% } %>
-          
-          
-          
         <% } else{ %> 
-
             <center>
-              <a class="nav-item nav-link" href="/login" aria-expanded="false" >To see your URLs, Click me to login!  :)</a>
+              <a class="nav-item nav-link" href="/login" aria-expanded="false" >To see your URLs, Click me to login!</a>
             </center>
-          
-          
        <% } %>
 
 
